@@ -45,7 +45,7 @@ Status KeepClear::ApplyRule(Frame* const frame,
   CHECK_NOTNULL(reference_line_info);
 
   // keep_clear zone
-  if (config_.keep_clear().enable_keep_clear_zone()) {
+  if (config_.keep_clear().enable_keep_clear_zone()) {  //TRUE
     const std::vector<PathOverlap>& keep_clear_overlaps =
         reference_line_info->reference_line().map_path().clear_area_overlaps();
     for (const auto& keep_clear_overlap : keep_clear_overlaps) {
@@ -63,8 +63,8 @@ Status KeepClear::ApplyRule(Frame* const frame,
     }
   }
 
-  // junction
-  if (config_.keep_clear().enable_junction()) {
+  // junction，交叉路口
+  if (config_.keep_clear().enable_junction()) {  //true
     hdmap::PathOverlap* crosswalk_overlap = nullptr;
     hdmap::PathOverlap* stop_sign_overlap = nullptr;
     hdmap::PathOverlap* traffic_light_overlap = nullptr;
@@ -114,7 +114,7 @@ Status KeepClear::ApplyRule(Frame* const frame,
         // traffic_light, stop_sign, and then crosswalk if neither
         if (traffic_light_overlap != nullptr &&
             std::fabs(pnc_junction_start_s - traffic_light_overlap->start_s) <=
-                config_.keep_clear().align_with_traffic_sign_tolerance()) {
+                config_.keep_clear().align_with_traffic_sign_tolerance()) { //4.5米
           ADEBUG << "adjust pnc_junction_start_s[" << pnc_junction_start_s
                  << "] to traffic_light_start_s"
                  << traffic_light_overlap->start_s << "]";
@@ -163,16 +163,16 @@ bool KeepClear::IsCreeping(const double pnc_junction_start_s,
   // while creeping, no need create keep clear obstacle
   const auto& stage_type =
       injector_->planning_context()->planning_status().scenario().stage_type();
-  if (stage_type != StageType::STOP_SIGN_UNPROTECTED_CREEP &&
+  if (stage_type != StageType::STOP_SIGN_UNPROTECTED_CREEP && //无保护停止标志
       stage_type !=
-          StageType::TRAFFIC_LIGHT_UNPROTECTED_RIGHT_TURN_CREEP &&
-      stage_type != StageType::TRAFFIC_LIGHT_UNPROTECTED_LEFT_TURN_CREEP) {
+          StageType::TRAFFIC_LIGHT_UNPROTECTED_RIGHT_TURN_CREEP && //没有明确的右转交通灯
+      stage_type != StageType::TRAFFIC_LIGHT_UNPROTECTED_LEFT_TURN_CREEP) { //没有明确的左转交通灯
     return false;
   }
 
   // check distance
   static constexpr double kDistance = 5.0;
-  return (fabs(adc_front_edge_s - pnc_junction_start_s) <= kDistance);
+  return (fabs(adc_front_edge_s - pnc_junction_start_s) <= kDistance); //路口在自车5米范围内
 }
 
 bool KeepClear::BuildKeepClearObstacle(
@@ -184,8 +184,8 @@ bool KeepClear::BuildKeepClearObstacle(
 
   // check
   const double adc_front_edge_s = reference_line_info->AdcSlBoundary().end_s();
-  if (adc_front_edge_s - keep_clear_start_s >
-      config_.keep_clear().min_pass_s_distance()) {
+  if (adc_front_edge_s - keep_clear_start_s >  //自车已经进入禁停区，则忽略
+      config_.keep_clear().min_pass_s_distance()) {  //1M
     ADEBUG << "adc inside keep_clear zone[" << virtual_obstacle_id << "] s["
            << keep_clear_start_s << ", " << keep_clear_end_s
            << "] adc_front_edge_s[" << adc_front_edge_s
@@ -196,7 +196,7 @@ bool KeepClear::BuildKeepClearObstacle(
   ADEBUG << "keep clear obstacle: [" << keep_clear_start_s << ", "
          << keep_clear_end_s << "]";
   // create virtual static obstacle
-  auto* obstacle =
+  auto* obstacle =  //对于还未经过的禁停区，生成虚拟障碍物，并封装到path_obstacle中
       frame->CreateStaticObstacle(reference_line_info, virtual_obstacle_id,
                                   keep_clear_start_s, keep_clear_end_s);
   if (!obstacle) {
@@ -209,7 +209,7 @@ bool KeepClear::BuildKeepClearObstacle(
     return false;
   }
   path_obstacle->SetReferenceLineStBoundaryType(
-      STBoundary::BoundaryType::KEEP_CLEAR);
+      STBoundary::BoundaryType::KEEP_CLEAR); //原来是这里设置的
 
   return true;
 }

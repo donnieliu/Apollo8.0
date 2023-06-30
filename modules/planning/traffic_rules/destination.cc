@@ -80,7 +80,7 @@ int Destination::MakeDecisions(Frame* frame,
   const std::string stop_wall_id = FLAGS_destination_obstacle_id;
   const std::vector<std::string> wait_for_obstacle_ids;
 
-  if (FLAGS_enable_scenario_pull_over) {
+  if (FLAGS_enable_scenario_pull_over) {  //false
     const auto& pull_over_status =
         injector_->planning_context()->planning_status().pull_over();
     if (pull_over_status.has_position() &&
@@ -97,7 +97,7 @@ int Destination::MakeDecisions(Frame* frame,
                                      .front_edge_to_center() +
                                  config_.destination().stop_distance();
       util::BuildStopDecision(
-          stop_wall_id, stop_line_s, config_.destination().stop_distance(),
+          stop_wall_id, stop_line_s, config_.destination().stop_distance(),  //0.5
           StopReasonCode::STOP_REASON_PULL_OVER, wait_for_obstacle_ids,
           TrafficRuleConfig::RuleId_Name(config_.rule_id()), frame,
           reference_line_info);
@@ -108,8 +108,8 @@ int Destination::MakeDecisions(Frame* frame,
   // build stop decision
   ADEBUG << "BuildStopDecision: destination";
   const double dest_lane_s =
-      std::fmax(0.0, routing_end.s() - FLAGS_virtual_stop_wall_length -
-                         config_.destination().stop_distance());
+      std::fmax(0.0, routing_end.s() - FLAGS_virtual_stop_wall_length -  //0.1
+                         config_.destination().stop_distance());  //0.5
   util::BuildStopDecision(stop_wall_id, routing_end.id(), dest_lane_s,
                           config_.destination().stop_distance(),
                           StopReasonCode::STOP_REASON_DESTINATION,

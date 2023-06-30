@@ -48,7 +48,7 @@ Status ReferenceLineEnd::ApplyRule(
   double remain_s =
       reference_line.Length() - reference_line_info->AdcSlBoundary().end_s();
   if (remain_s >
-      config_.reference_line_end().min_reference_line_remain_length()) {
+      config_.reference_line_end().min_reference_line_remain_length()) {  //50m
     return Status::OK();
   }
 
@@ -56,7 +56,7 @@ Status ReferenceLineEnd::ApplyRule(
   std::string virtual_obstacle_id =
       REF_LINE_END_VO_ID_PREFIX + reference_line_info->Lanes().Id();
   double obstacle_start_s =
-      reference_line.Length() - 2 * FLAGS_virtual_stop_wall_length;
+      reference_line.Length() - 2 * FLAGS_virtual_stop_wall_length; //0.1,这个地方为什么减去两倍的长度，难道是为了留一个buffer
   auto* obstacle = frame->CreateStopObstacle(
       reference_line_info, virtual_obstacle_id, obstacle_start_s);
   if (!obstacle) {
@@ -72,10 +72,10 @@ Status ReferenceLineEnd::ApplyRule(
 
   // build stop decision
   const double stop_line_s =
-      obstacle_start_s - config_.reference_line_end().stop_distance();
+      obstacle_start_s - config_.reference_line_end().stop_distance(); //0.5
   auto stop_point = reference_line.GetReferencePoint(stop_line_s);
 
-  ObjectDecisionType stop;
+  ObjectDecisionType stop; //做停止决策
   auto stop_decision = stop.mutable_stop();
   stop_decision->set_reason_code(StopReasonCode::STOP_REASON_DESTINATION);
   stop_decision->set_distance_s(-config_.reference_line_end().stop_distance());
