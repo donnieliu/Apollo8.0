@@ -49,8 +49,8 @@ double StGapEstimator::EstimateSafeYieldingGap() {
 double StGapEstimator::EstimateProperOvertakingGap(
     const double target_obs_speed, const double adc_speed) {
   const double overtake_distance_s =
-      std::fmax(std::fmax(adc_speed, target_obs_speed) * kOvertakeTimeBuffer,
-                kMinOvertakeDistance);
+      std::fmax(std::fmax(adc_speed, target_obs_speed) * kOvertakeTimeBuffer,  //3s
+                kMinOvertakeDistance); //10米
   return overtake_distance_s;
 }
 

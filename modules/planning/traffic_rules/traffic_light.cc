@@ -76,6 +76,7 @@ void TrafficLight::MakeDecisions(Frame* const frame,
 
   const std::vector<PathOverlap>& traffic_light_overlaps =
       reference_line_info->reference_line().map_path().signal_overlaps();
+      //自车都已经超过了红绿灯，那么这个红绿灯略过
   for (const auto& traffic_light_overlap : traffic_light_overlaps) {
     if (traffic_light_overlap.end_s <= adc_back_edge_s) {
       continue;
@@ -106,12 +107,12 @@ void TrafficLight::MakeDecisions(Frame* const frame,
                                         injector_->vehicle_state()->y()};
     const double distance =
         common::util::DistanceXY(traffic_light_point, adc_position);
-    const double s_distance = traffic_light_overlap.start_s - adc_front_edge_s;
+    const double s_distance = traffic_light_overlap.start_s - adc_front_edge_s; 
     ADEBUG << "traffic_light[" << traffic_light_overlap.object_id
            << "] start_s[" << traffic_light_overlap.start_s << "] s_distance["
            << s_distance << "] actual_distance[" << distance << "]";
-    if (s_distance >= 0 &&
-        fabs(s_distance - distance) > kSDiscrepanceTolerance) {
+    if (s_distance >= 0 && //交通灯在自车前边
+        fabs(s_distance - distance) > kSDiscrepanceTolerance) {  //10米
       ADEBUG << "SKIP traffic_light[" << traffic_light_overlap.object_id
              << "] close in position, but far away along reference line";
       continue;
@@ -140,7 +141,7 @@ void TrafficLight::MakeDecisions(Frame* const frame,
     }
 
     // Red/Yellow/Unknown: check deceleration
-    if (stop_deceleration > config_.traffic_light().max_stop_deceleration()) {
+    if (stop_deceleration > config_.traffic_light().max_stop_deceleration()) {  //4m/s2;如果大于这个加速度，说明距离较远，这次暂不做处理
       AWARN << "stop_deceleration too big to achieve.  SKIP red light";
       continue;
     }

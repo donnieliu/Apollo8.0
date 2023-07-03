@@ -32,7 +32,7 @@ namespace planning {
 
 using apollo::common::Status;
 using apollo::hdmap::PathOverlap;
-
+//这个在美国很常见，在中国很少见
 StopSign::StopSign(const TrafficRuleConfig& config,
                    const std::shared_ptr<DependencyInjector>& injector)
     : TrafficRule(config, injector) {}

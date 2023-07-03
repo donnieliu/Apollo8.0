@@ -85,7 +85,7 @@ Status SpeedBoundsDecider::Process(
     //这里直接读取每个障碍物的st_boundary，在之前的task中完成st_boundary的计算
     const auto &st_boundary = obstacle->path_st_boundary();
     if (!st_boundary.IsEmpty()) {
-      if (st_boundary.boundary_type() == STBoundary::BoundaryType::KEEP_CLEAR) { //BoundaryType::KEEP_CLEAR是什么
+      if (st_boundary.boundary_type() == STBoundary::BoundaryType::KEEP_CLEAR) { //如果是KEEP_CLEAR的障碍物，不会认为是blocking obstacle
         path_decision->Find(id)->SetBlockingObstacle(false);
       } else {
         path_decision->Find(id)->SetBlockingObstacle(true);

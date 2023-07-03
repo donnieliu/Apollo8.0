@@ -77,7 +77,7 @@ int Destination::MakeDecisions(Frame* frame,
     return 0;
   }
 
-  const std::string stop_wall_id = FLAGS_destination_obstacle_id;
+  const std::string stop_wall_id = FLAGS_destination_obstacle_id;  //DEST
   const std::vector<std::string> wait_for_obstacle_ids;
 
   if (FLAGS_enable_scenario_pull_over) {  //false

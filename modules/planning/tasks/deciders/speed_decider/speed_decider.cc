@@ -356,7 +356,7 @@ bool SpeedDecider::CreateStopDecision(const Obstacle& obstacle,
   // TODO(all): this is a bug! Cannot mix reference s and path s!
   // Replace boundary.min_s() with computed reference line s
   // fence is set according to reference line s.
-  double fence_s = adc_sl_boundary_.end_s() + boundary.min_s() + stop_distance; //这个什么意思？？
+  double fence_s = adc_sl_boundary_.end_s() + boundary.min_s() + stop_distance; //自车车头位置+障碍物的st图的最小s+停车距离
   if (boundary.boundary_type() == STBoundary::BoundaryType::KEEP_CLEAR) {
     fence_s = obstacle.PerceptionSLBoundary().start_s();
   }
@@ -461,8 +461,9 @@ bool SpeedDecider::CreateOvertakeDecision(
     const Obstacle& obstacle,
     ObjectDecisionType* const overtake_decision) const {
   const auto& velocity = obstacle.Perception().velocity();
+  //init_point_是规划起点；将障碍物的速度投影到规划起点，也就是沿规划起点的分量
   const double obstacle_speed =
-      common::math::Vec2d::CreateUnitVec2d(init_point_.path_point().theta())
+      common::math::Vec2d::CreateUnitVec2d(init_point_.path_point().theta()) 
           .InnerProd(Vec2d(velocity.x(), velocity.y()));
 
   const double overtake_distance_s =
@@ -470,10 +471,11 @@ bool SpeedDecider::CreateOvertakeDecision(
                                                   init_point_.v());
 
   const auto& boundary = obstacle.path_st_boundary();
+  //自车车头位置+障碍车离自车的最小位置（刚开始轨迹相交点的位置）+ 安全距离（跟障碍车在轨迹初始点的投影以及自车的速度方向有关）
   const double reference_line_fence_s =
-      adc_sl_boundary_.end_s() + boundary.min_s() + overtake_distance_s;
+      adc_sl_boundary_.end_s() + boundary.min_s() + overtake_distance_s;  
   const double main_stop_s =
-      reference_line_info_->path_decision()->stop_reference_line_s();
+      reference_line_info_->path_decision()->stop_reference_line_s(); //stop_reference_line_s这个地方都有哪些地方赋值？？
   if (main_stop_s < reference_line_fence_s) {
     ADEBUG << "Overtake reference_s is further away, ignore.";
     return false;

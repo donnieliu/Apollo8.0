@@ -135,6 +135,7 @@ std::unique_ptr<Scenario> ScenarioManager::CreateScenario(
 
 void ScenarioManager::RegisterScenarios() {
   // lane_follow
+  //注册场景到config_map_中
   if (planning_config_.learning_mode() == PlanningConfig::HYBRID ||
       planning_config_.learning_mode() == PlanningConfig::HYBRID_TEST) {
     // HYBRID or HYBRID_TEST
@@ -333,12 +334,12 @@ ScenarioType ScenarioManager::SelectPadMsgScenario(const Frame& frame) {   //判
 
   switch (pad_msg_driving_action) {
     case PadMessage::PULL_OVER:
-      if (FLAGS_enable_scenario_emergency_pull_over) {
+      if (FLAGS_enable_scenario_emergency_pull_over) {  //true
         return ScenarioType::EMERGENCY_PULL_OVER;
       }
       break;
     case PadMessage::STOP:
-      if (FLAGS_enable_scenario_emergency_stop) {
+      if (FLAGS_enable_scenario_emergency_stop) {  //true
         return ScenarioType::EMERGENCY_STOP;
       }
       break;
@@ -346,7 +347,7 @@ ScenarioType ScenarioManager::SelectPadMsgScenario(const Frame& frame) {   //判
       if (current_scenario_->scenario_type() ==
               ScenarioType::EMERGENCY_PULL_OVER ||
           current_scenario_->scenario_type() == ScenarioType::EMERGENCY_STOP) {
-        return ScenarioType::PARK_AND_GO;
+        return ScenarioType::PARK_AND_GO; 
       }
       break;
     default:
@@ -743,7 +744,7 @@ ScenarioType ScenarioManager::SelectParkAndGoScenario(const Frame& frame) {
       common::VehicleConfigHelper::Instance()
           ->GetConfig()
           .vehicle_param()
-          .max_abs_speed_when_stopped();
+          .max_abs_speed_when_stopped();  //0.2
 
   hdmap::LaneInfoConstPtr lane;
 
@@ -760,12 +761,12 @@ ScenarioType ScenarioManager::SelectParkAndGoScenario(const Frame& frame) {
   ADEBUG << "adc_distance_to_dest:" << adc_distance_to_dest;
   // if vehicle is static, far enough to destination and (off-lane or not on
   // city_driving lane)
-  if (std::fabs(adc_speed) < max_abs_speed_when_stopped &&
-      adc_distance_to_dest > scenario_config.min_dist_to_dest() &&
+  if (std::fabs(adc_speed) < max_abs_speed_when_stopped &&  //速度小于0.2
+      adc_distance_to_dest > scenario_config.min_dist_to_dest() &&  //10米
       (HDMapUtil::BaseMap().GetNearestLaneWithHeading(
-           adc_point, 2.0, vehicle_state.heading(), M_PI / 3.0, &lane, &s,
+           adc_point, 2.0, vehicle_state.heading(), M_PI / 3.0, &lane, &s, //最近的lane存在
            &l) != 0 ||
-       lane->lane().type() != hdmap::Lane::CITY_DRIVING)) {
+       lane->lane().type() != hdmap::Lane::CITY_DRIVING)) {  //必须起步在非机动车道
     park_and_go = true;
   }
 
@@ -791,9 +792,10 @@ void ScenarioManager::Observe(const Frame& frame) {
     }
   }
 }
-
-void ScenarioManager::Update(const common::TrajectoryPoint& ego_point,  //用来决策当前处在什么场景，如果进入了新的场景，会创建一个新的对象来进行之后的规划逻辑
-                             const Frame& frame) {  //场景决策逻辑在这个函数中，会根据配置选择基于规则还是基于学习的决策方法
+ //用来决策当前处在什么场景，如果进入了新的场景，会创建一个新的对象来进行之后的规划逻辑
+ //场景决策逻辑在这个函数中，会根据配置选择基于规则还是基于学习的决策方法
+void ScenarioManager::Update(const common::TrajectoryPoint& ego_point, 
+                             const Frame& frame) {  
   ACHECK(!frame.reference_line_info().empty());
 
   Observe(frame);
@@ -814,8 +816,8 @@ void ScenarioManager::ScenarioDispatch(const Frame& frame) {
   }
   if ((planning_config_.learning_mode() == PlanningConfig::E2E ||
        planning_config_.learning_mode() == PlanningConfig::E2E_TEST) &&
-      history_points_len >= FLAGS_min_past_history_points_len) {
-    scenario_type = ScenarioDispatchLearning();
+      history_points_len >= FLAGS_min_past_history_points_len) { //0
+    scenario_type = ScenarioDispatchLearning(); 
   } else {
     scenario_type = ScenarioDispatchNonLearning(frame);
   }
@@ -846,13 +848,15 @@ ScenarioType ScenarioManager::ScenarioDispatchNonLearning(const Frame& frame) { 
   ////////////////////////////////////////
   // Pad Msg scenario
   scenario_type = SelectPadMsgScenario(frame);   //在场景判断时首先调用这个函数，根据驾驶员意图来安排场景
-
+  //  如果pad没有场景输入，则根据当前场景进行场景跳转
   if (scenario_type == default_scenario_type_) {
     // check current_scenario (not switchable)
+    //如果是LANE_FOLLOW或者是PULL_OVER，则保持当前场景
     switch (current_scenario_->scenario_type()) {
       case ScenarioType::LANE_FOLLOW:
       case ScenarioType::PULL_OVER:
         break;
+      //如果是BARE_INTERSECTION_UNPROTECTED~YIELD_SIGN这些场景，则每周期要检查是否达到目的点附近，更新场景位LANE_FOLLOW,否则不改变场景
       case ScenarioType::BARE_INTERSECTION_UNPROTECTED:
       case ScenarioType::EMERGENCY_PULL_OVER:
       case ScenarioType::PARK_AND_GO:
@@ -862,6 +866,7 @@ ScenarioType ScenarioManager::ScenarioDispatchNonLearning(const Frame& frame) { 
       case ScenarioType::TRAFFIC_LIGHT_UNPROTECTED_LEFT_TURN:
       case ScenarioType::TRAFFIC_LIGHT_UNPROTECTED_RIGHT_TURN:
       case ScenarioType::VALET_PARKING:
+      //如果是YIELD_SIGN，则检查该场景是否完成。如果没有完成则保持让行场景
       case ScenarioType::YIELD_SIGN:
         // must continue until finish
         if (current_scenario_->GetStatus() !=
@@ -877,13 +882,14 @@ ScenarioType ScenarioManager::ScenarioDispatchNonLearning(const Frame& frame) { 
   ////////////////////////////////////////
   // ParkAndGo / starting scenario
   if (scenario_type == default_scenario_type_) {
-    if (FLAGS_enable_scenario_park_and_go) {
+    if (FLAGS_enable_scenario_park_and_go) {  //TRUE
       scenario_type = SelectParkAndGoScenario(frame);
     }
   }
 
   ////////////////////////////////////////
   // intersection scenarios
+  //交叉路口场景
   if (scenario_type == default_scenario_type_) {
     scenario_type = SelectInterceptionScenario(frame);
   }

@@ -58,7 +58,7 @@ double GetADCStopDeceleration(
   const double max_adc_stop_speed = common::VehicleConfigHelper::Instance()
                                         ->GetConfig()
                                         .vehicle_param()
-                                        .max_abs_speed_when_stopped();
+                                        .max_abs_speed_when_stopped();  //0.2
   if (adc_speed < max_adc_stop_speed) {
     return 0.0;
   }

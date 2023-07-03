@@ -239,6 +239,7 @@ bool ReferenceLineInfo::GetFirstOverlap(
   return overlap_min_s < kMaxOverlapRange;
 }
 
+//把各种类型的第一次遇见的overlap都塞进first_encounter_overlaps_
 void ReferenceLineInfo::InitFirstOverlaps() {
   const auto& map_path = reference_line_.map_path();
   // clear_zone
@@ -744,7 +745,7 @@ double ReferenceLineInfo::SDistanceToDestination() const {
     return res;
   }
   const double stop_s = dest_ptr->PerceptionSLBoundary().start_s() +
-                        dest_ptr->LongitudinalDecision().stop().distance_s();
+                        dest_ptr->LongitudinalDecision().stop().distance_s(); //distance_s：应该是个负数或者0
   return stop_s - adc_sl_boundary_.end_s();
 }
 

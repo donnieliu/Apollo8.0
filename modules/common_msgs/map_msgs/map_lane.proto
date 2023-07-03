@@ -71,7 +71,7 @@ message Lane {
     NONE = 1;
     CITY_DRIVING = 2;
     BIKING = 3;
-    SIDEWALK = 4;
+    SIDEWALK = 4;  //人行道
     PARKING = 5;
     SHOULDER = 6;
   };
