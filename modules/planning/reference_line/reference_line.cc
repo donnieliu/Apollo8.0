@@ -531,7 +531,7 @@ void ReferenceLine::GetLaneFromS(
   auto ref_point = GetReferencePoint(s);
   std::unordered_set<hdmap::LaneInfoConstPtr> lane_set;
   for (const auto& lane_waypoint : ref_point.lane_waypoints()) {
-    if (common::util::InsertIfNotPresent(&lane_set, lane_waypoint.lane)) {
+    if (common::util::InsertIfNotPresent(&lane_set, lane_waypoint.lane)) {  //这里的laywaypoint是什么啊？？
       lanes->push_back(lane_waypoint.lane);
     }
   }

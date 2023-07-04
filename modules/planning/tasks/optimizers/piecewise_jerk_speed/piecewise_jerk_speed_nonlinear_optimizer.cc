@@ -68,7 +68,7 @@ Status PiecewiseJerkSpeedNonlinearOptimizer::Process(
     return Status(ErrorCode::PLANNING_ERROR, msg);
   }
 
-  if (reference_line_info_->ReachedDestination()) {
+  if (reference_line_info_->ReachedDestination()) { //到终点了，直接返回了
     return Status::OK();
   }
 
@@ -183,33 +183,33 @@ Status PiecewiseJerkSpeedNonlinearOptimizer::SetUpStatesAndBounds(
       *reference_line_info_->mutable_st_graph_data();
   // TODO(Jinyun): move to confs
   delta_t_ = 0.1;
-  total_length_ = st_graph_data.path_length();
-  total_time_ = st_graph_data.total_time_by_conf();
-  num_of_knots_ = static_cast<int>(total_time_ / delta_t_) + 1;
+  total_length_ = st_graph_data.path_length(); //discreted path length
+  total_time_ = st_graph_data.total_time_by_conf(); //7s
+  num_of_knots_ = static_cast<int>(total_time_ / delta_t_) + 1; //优化的轨迹点数
 
   // Set initial values
-  s_init_ = 0.0;
+  s_init_ = 0.0; //新一帧数据起始点s应该为0
   s_dot_init_ = st_graph_data.init_point().v();
   s_ddot_init_ = st_graph_data.init_point().a();
 
   // Set s_dot bounary
-  s_dot_max_ = std::fmax(FLAGS_planning_upper_speed_limit,
+  s_dot_max_ = std::fmax(FLAGS_planning_upper_speed_limit,  //31.3
                          st_graph_data.init_point().v());
 
   // Set s_ddot boundary
   const auto& veh_param =
       common::VehicleConfigHelper::GetConfig().vehicle_param();
-  s_ddot_max_ = veh_param.max_acceleration();
-  s_ddot_min_ = -1.0 * std::abs(veh_param.max_deceleration());
+  s_ddot_max_ = veh_param.max_acceleration();  //2m/s2
+  s_ddot_min_ = -1.0 * std::abs(veh_param.max_deceleration()); //-2
 
   // Set s_dddot boundary
   // TODO(Jinyun): allow the setting of jerk_lower_bound and move jerk config to
   // a better place
-  s_dddot_min_ = -std::abs(FLAGS_longitudinal_jerk_lower_bound);
-  s_dddot_max_ = FLAGS_longitudinal_jerk_upper_bound;
+  s_dddot_min_ = -std::abs(FLAGS_longitudinal_jerk_lower_bound); //-4
+  s_dddot_max_ = FLAGS_longitudinal_jerk_upper_bound; //2
 
   // Set s boundary
-  if (FLAGS_use_soft_bound_in_nonlinear_speed_opt) {
+  if (FLAGS_use_soft_bound_in_nonlinear_speed_opt) { //true
     s_bounds_.clear();
     s_soft_bounds_.clear();
     // TODO(Jinyun): move to confs
@@ -234,7 +234,7 @@ Status PiecewiseJerkSpeedNonlinearOptimizer::SetUpStatesAndBounds(
             break;
           case STBoundary::BoundaryType::FOLLOW:
             s_upper_bound =
-                std::fmin(s_upper_bound, s_upper - FLAGS_follow_min_distance);
+                std::fmin(s_upper_bound, s_upper - FLAGS_follow_min_distance); //3m
             if (!speed_data.EvaluateByTime(curr_t, &sp)) {
               const std::string msg =
                   "rough speed profile estimation for soft follow fence failed";
@@ -244,7 +244,7 @@ Status PiecewiseJerkSpeedNonlinearOptimizer::SetUpStatesAndBounds(
             s_soft_upper_bound =
                 std::fmin(s_soft_upper_bound,
                           s_upper - FLAGS_follow_min_distance -
-                              std::min(7.0, FLAGS_follow_time_buffer * sp.v()));
+                              std::min(7.0, FLAGS_follow_time_buffer * sp.v())); //FLAGS_follow_min_distance：2.5s
             break;
           case STBoundary::BoundaryType::OVERTAKE:
             s_lower_bound = std::fmax(s_lower_bound, s_lower);

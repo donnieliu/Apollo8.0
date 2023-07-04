@@ -101,7 +101,7 @@ bool ValetParkingScenario::IsTransferable(const Frame& frame,
                                           const double parking_start_range) {
   // TODO(all) Implement available parking spot detection by preception results
   std::string target_parking_spot_id;
-  if (frame.local_view().routing->routing_request().has_parking_info() &&
+  if (frame.local_view().routing->routing_request().has_parking_info() && //从routing中得到target_parking_spot_id
       frame.local_view()
           .routing->routing_request()
           .parking_info()
@@ -115,7 +115,7 @@ bool ValetParkingScenario::IsTransferable(const Frame& frame,
     return false;
   }
 
-  if (target_parking_spot_id.empty()) {
+  if (target_parking_spot_id.empty()) { //字符串有empty()成员
     return false;
   }
 
@@ -124,7 +124,7 @@ bool ValetParkingScenario::IsTransferable(const Frame& frame,
   PathOverlap parking_space_overlap;
   const auto& vehicle_state = frame.vehicle_state();
 
-  if (!SearchTargetParkingSpotOnPath(nearby_path, target_parking_spot_id,
+  if (!SearchTargetParkingSpotOnPath(nearby_path, target_parking_spot_id, //从地图上搜索是否存在path能够抵达该parking_spot
                                      &parking_space_overlap)) {
     ADEBUG << "No such parking spot found after searching all path forward "
               "possible"
@@ -156,7 +156,7 @@ bool ValetParkingScenario::SearchTargetParkingSpotOnPath(
   return false;
 }
 
-bool ValetParkingScenario::CheckDistanceToParkingSpot(
+bool ValetParkingScenario::CheckDistanceToParkingSpot(  //这个地方没看太懂
     const Frame& frame,
     const VehicleState& vehicle_state, const Path& nearby_path,
     const double parking_start_range,
@@ -194,7 +194,7 @@ bool ValetParkingScenario::CheckDistanceToParkingSpot(
   Vec2d vehicle_vec(vehicle_state.x(), vehicle_state.y());
   nearby_path.GetNearestPoint(vehicle_vec, &vehicle_point_s, &vehicle_point_l);
   if (std::abs(parking_space_center_s - vehicle_point_s) <
-      parking_start_range) {
+      parking_start_range) {  //20米
     return true;
   } else {
     return false;
