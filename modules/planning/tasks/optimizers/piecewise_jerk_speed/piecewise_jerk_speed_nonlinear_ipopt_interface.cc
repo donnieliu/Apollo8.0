@@ -49,6 +49,7 @@ PiecewiseJerkSpeedNonlinearIpoptInterface::
       v_offset_(num_of_points),
       a_offset_(num_of_points * 2) {}
 
+//该函数对优化问题的维度进行设置，包括优化变量的个数n，约束条件的个数m，雅克比矩阵的非0项nnz_jac_g，海森矩阵的非0项nnz_h_lag。
 bool PiecewiseJerkSpeedNonlinearIpoptInterface::get_nlp_info(
     int &n, int &m, int &nnz_jac_g, int &nnz_h_lag,
     IndexStyleEnum &index_style) {
@@ -134,6 +135,7 @@ bool PiecewiseJerkSpeedNonlinearIpoptInterface::get_nlp_info(
   return true;
 }
 
+//该函数设置优化变量的上下限范围以及约束条件的上下限值
 bool PiecewiseJerkSpeedNonlinearIpoptInterface::get_bounds_info(
     int n, double *x_l, double *x_u, int m, double *g_l, double *g_u) {
   // default nlp_lower_bound_inf value in Ipopt
@@ -510,7 +512,7 @@ bool PiecewiseJerkSpeedNonlinearIpoptInterface::eval_jac_g(
     int non_zero_index = 0;
     int constraint_index = 0;
 
-    // s monotone constraints s_i+1 - s_i
+    // s monotone constraints s_i+1 - s_i   //单调约束
     for (int i = 0; i + 1 < num_of_points_; ++i) {
       // s_i
       iRow[non_zero_index] = constraint_index;

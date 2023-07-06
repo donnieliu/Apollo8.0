@@ -311,7 +311,7 @@ bool PiecewiseJerkSpeedNonlinearOptimizer::CheckSpeedLimitFeasibility() {
   // a naive check on first point of speed limit
   static constexpr double kEpsilon = 1e-6;
   const double init_speed_limit = speed_limit_.GetSpeedLimitByS(s_init_);
-  if (init_speed_limit + kEpsilon < s_dot_init_) {
+  if (init_speed_limit + kEpsilon < s_dot_init_) { //规划起点的速度大于该点在地图中的速度限制，那么会返回false，不会执行非线性求解
     AERROR << "speed limit [" << init_speed_limit
            << "] lower than initial speed[" << s_dot_init_ << "]";
     return false;
@@ -327,15 +327,15 @@ Status PiecewiseJerkSpeedNonlinearOptimizer::SmoothSpeedLimit() {
   for (int i = 0; i < 100; ++i) {
     double path_s = i * delta_s;
     double limit = speed_limit_.GetSpeedLimitByS(path_s);
-    speed_ref.emplace_back(limit);
+    speed_ref.emplace_back(limit);  //速度限制的参考值
   }
   std::array<double, 3> init_state = {speed_ref[0], 0.0, 0.0};
   PiecewiseJerkPathProblem piecewise_jerk_problem(speed_ref.size(), delta_s,
                                                   init_state);
-  piecewise_jerk_problem.set_x_bounds(0.0, 50.0);
-  piecewise_jerk_problem.set_dx_bounds(-10.0, 10.0);
-  piecewise_jerk_problem.set_ddx_bounds(-10.0, 10.0);
-  piecewise_jerk_problem.set_dddx_bound(-10.0, 10.0);
+  piecewise_jerk_problem.set_x_bounds(0.0, 50.0); //速度限制bound
+  piecewise_jerk_problem.set_dx_bounds(-10.0, 10.0); //速度限制一阶导bound
+  piecewise_jerk_problem.set_ddx_bounds(-10.0, 10.0); //速度限制二阶导bound
+  piecewise_jerk_problem.set_dddx_bound(-10.0, 10.0);  //速度限制三阶导bound
 
   piecewise_jerk_problem.set_weight_x(0.0);
   piecewise_jerk_problem.set_weight_dx(10.0);
@@ -388,10 +388,10 @@ Status PiecewiseJerkSpeedNonlinearOptimizer::SmoothPathCurvature(
                                       path_init_point.ddkappa()};
   PiecewiseJerkPathProblem piecewise_jerk_problem(path_curvature.size(),
                                                   delta_s, init_state);
-  piecewise_jerk_problem.set_x_bounds(-1.0, 1.0);
-  piecewise_jerk_problem.set_dx_bounds(-10.0, 10.0);
-  piecewise_jerk_problem.set_ddx_bounds(-10.0, 10.0);
-  piecewise_jerk_problem.set_dddx_bound(-10.0, 10.0);
+  piecewise_jerk_problem.set_x_bounds(-1.0, 1.0);  //曲率值的范围
+  piecewise_jerk_problem.set_dx_bounds(-10.0, 10.0);  //曲率值一阶导的范围
+  piecewise_jerk_problem.set_ddx_bounds(-10.0, 10.0);  //曲率值二阶导的范围
+  piecewise_jerk_problem.set_dddx_bound(-10.0, 10.0);  //曲率值三导的范围
 
   piecewise_jerk_problem.set_weight_x(0.0);
   piecewise_jerk_problem.set_weight_dx(10.0);
@@ -434,10 +434,10 @@ Status PiecewiseJerkSpeedNonlinearOptimizer::OptimizeByQP(
   PiecewiseJerkSpeedProblem piecewise_jerk_problem(num_of_knots_, delta_t_,
                                                    init_states);
   piecewise_jerk_problem.set_dx_bounds(
-      0.0, std::fmax(FLAGS_planning_upper_speed_limit, init_states[1]));
-  piecewise_jerk_problem.set_ddx_bounds(s_ddot_min_, s_ddot_max_);
-  piecewise_jerk_problem.set_dddx_bound(s_dddot_min_, s_dddot_max_);
-  piecewise_jerk_problem.set_x_bounds(s_bounds_);
+      0.0, std::fmax(FLAGS_planning_upper_speed_limit, init_states[1]));  //31.3；速度bound
+  piecewise_jerk_problem.set_ddx_bounds(s_ddot_min_, s_ddot_max_);  //加速度bound
+  piecewise_jerk_problem.set_dddx_bound(s_dddot_min_, s_dddot_max_); //jerkbound
+  piecewise_jerk_problem.set_x_bounds(s_bounds_);  //sbound
 
   // TODO(Jinyun): parameter tunnings
   const auto& config =
@@ -453,7 +453,7 @@ Status PiecewiseJerkSpeedNonlinearOptimizer::OptimizeByQP(
     // get path_s
     SpeedPoint sp;
     speed_data->EvaluateByTime(curr_t, &sp);
-    x_ref.emplace_back(sp.s());
+    x_ref.emplace_back(sp.s());  //拿到粗解的s参考值
   }
   piecewise_jerk_problem.set_x_ref(config.ref_s_weight(), std::move(x_ref));
 
@@ -489,13 +489,13 @@ Status PiecewiseJerkSpeedNonlinearOptimizer::OptimizeByNLP(
   const auto& config =
       config_.piecewise_jerk_nonlinear_speed_optimizer_config();
 
-  ptr_interface->set_curvature_curve(smoothed_path_curvature_);
+  ptr_interface->set_curvature_curve(smoothed_path_curvature_); //传入平滑后的路径平滑曲线
 
   // TODO(Hongyi): add debug_info for speed_limit fitting curve
-  ptr_interface->set_speed_limit_curve(smoothed_speed_limit_);
+  ptr_interface->set_speed_limit_curve(smoothed_speed_limit_); //传入平滑后的速度limit曲线
 
-  // TODO(Jinyun): refactor warms start setting API
-  if (config.use_warm_start()) {
+  // TODO(Jinyun): refactor warms start setting API //拿QP优化好的结果，因此NLP是基于QP后的结果
+  if (config.use_warm_start()) {  // true
     const auto& warm_start_distance = *distance;
     const auto& warm_start_velocity = *velocity;
     const auto& warm_start_acceleration = *acceleration;
@@ -518,18 +518,18 @@ Status PiecewiseJerkSpeedNonlinearOptimizer::OptimizeByNLP(
     ptr_interface->set_warm_start(warm_start);
   }
 
-  if (FLAGS_use_smoothed_dp_guide_line) {
+  if (FLAGS_use_smoothed_dp_guide_line) {  //false
     ptr_interface->set_reference_spatial_distance(*distance);
     // TODO(Jinyun): move to confs
     ptr_interface->set_w_reference_spatial_distance(10.0);
   } else {
-    std::vector<double> spatial_potantial(num_of_knots_, total_length_);
+    std::vector<double> spatial_potantial(num_of_knots_, total_length_); //设置S的参考值
     ptr_interface->set_reference_spatial_distance(spatial_potantial);
     ptr_interface->set_w_reference_spatial_distance(
-        config.s_potential_weight());
+        config.s_potential_weight());  //0.05
   }
 
-  if (FLAGS_use_soft_bound_in_nonlinear_speed_opt) {
+  if (FLAGS_use_soft_bound_in_nonlinear_speed_opt) { //true
     ptr_interface->set_soft_safety_bounds(s_soft_bounds_);
     ptr_interface->set_w_soft_s_bound(config.soft_s_bound_weight());
   }

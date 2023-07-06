@@ -221,7 +221,7 @@ ScenarioType ScenarioManager::SelectPullOverScenario(const Frame& frame) {
   bool pull_over_scenario =
       (frame.reference_line_info().size() == 1 &&  // NO, while changing lane
        adc_distance_to_dest >=
-           scenario_config.pull_over_min_distance_buffer() && //10米
+           scenario_config.pull_over_min_distance_buffer() && //10米；adc_distance_to_dest：10到50之间
        adc_distance_to_dest <=
            scenario_config.start_pull_over_scenario_distance());  //50米
 
@@ -235,7 +235,7 @@ ScenarioType ScenarioManager::SelectPullOverScenario(const Frame& frame) {
     }
   }
 
-  // check around junction
+  // check around junction //pullover的终点不能在交叉路口附近
   if (pull_over_scenario) {
     static constexpr double kDistanceToAvoidJunction = 8.0;  // meter
     for (const auto& overlap : first_encountered_overlap_map_) {
@@ -255,7 +255,7 @@ ScenarioType ScenarioManager::SelectPullOverScenario(const Frame& frame) {
     }
   }
 
-  // check rightmost driving lane along pull-over path //看最右侧车道
+  // check rightmost driving lane along pull-over path //能查找到最右边车道的lane_type，并且该车道允许pullover
   if (pull_over_scenario) {
     double check_s = adc_front_edge_s;
     static constexpr double kDistanceUnit = 5.0;
@@ -273,6 +273,7 @@ ScenarioType ScenarioManager::SelectPullOverScenario(const Frame& frame) {
       ADEBUG << "check_s[" << check_s << "] lane[" << lane_id << "]";
 
       // check neighbor lanes type: NONE/CITY_DRIVING/BIKING/SIDEWALK/PARKING
+      //能查找到最右边车道的lane_type，并且该车道允许pullover
       bool rightmost_driving_lane = true;
       for (const auto& neighbor_lane_id :
            lane->lane().right_neighbor_forward_lane_id()) {
@@ -289,11 +290,11 @@ ScenarioType ScenarioManager::SelectPullOverScenario(const Frame& frame) {
           ADEBUG << "lane[" << lane_id << "]'s right neighbor forward lane["
                  << neighbor_lane_id.id() << "] type["
                  << Lane_LaneType_Name(lane_type) << "] can't pull over";
-          rightmost_driving_lane = false; //若找到右边车道，那么则当前车道并不是最右侧车道
+          rightmost_driving_lane = false; //若找到右边车道，最右侧车道是机动车道，那么也不允许进入pullover场景
           break;
         }
       }
-      if (!rightmost_driving_lane) { //如果都不是最右侧车道，那么也不会是pull_over场景
+      if (!rightmost_driving_lane) { //如果最右侧车道不允许pullover（比如机动车道），那么也不会进入pullover的场景
         pull_over_scenario = false;
         break;
       }

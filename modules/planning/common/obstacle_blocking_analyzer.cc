@@ -40,7 +40,7 @@ bool IsNonmovableObstacle(const ReferenceLineInfo& reference_line_info,
   // Obstacle is far away.
   const SLBoundary& adc_sl_boundary = reference_line_info.AdcSlBoundary();
   if (obstacle.PerceptionSLBoundary().start_s() >
-      adc_sl_boundary.end_s() + kAdcDistanceThreshold) {
+      adc_sl_boundary.end_s() + kAdcDistanceThreshold) {  //障碍车太远了不允许借道，到跟前才能借道
     ADEBUG << " - It is too far ahead and we are not so sure of its status.";
     return false;
   }
@@ -69,14 +69,15 @@ bool IsNonmovableObstacle(const ReferenceLineInfo& reference_line_info,
     }
     double delta_s = other_obstacle->PerceptionSLBoundary().start_s() -
                      obstacle.PerceptionSLBoundary().end_s();
-    if (delta_s < 0.0 || delta_s > kObstaclesDistanceThreshold) {
+    if (delta_s < 0.0 || delta_s > kObstaclesDistanceThreshold) {  //15米
       continue;
     }
 
     // TODO(All): Fix the segmentation bug for large vehicles, otherwise
     // the follow line will be problematic.
     ADEBUG << " - It is blocked by others, and will move later.";
-    return false;
+    //自车前边的车也被其他的车阻碍，那么认为前边障碍车可能不久后会启动，这个时候不允许换道
+    return false;  
   }
 
   ADEBUG << "IT IS NON-MOVABLE!";
@@ -200,7 +201,7 @@ bool IsBlockingDrivingPathObstacle(const ReferenceLine& reference_line,
 
 bool IsParkedVehicle(const ReferenceLine& reference_line,
                      const Obstacle* obstacle) {
-  if (!FLAGS_enable_scenario_side_pass_multiple_parked_obstacles) {
+  if (!FLAGS_enable_scenario_side_pass_multiple_parked_obstacles) {  //true；如果设置成false意味着没考虑IsParkedVehicle因素，继续以下的判断
     return false;
   }
   double road_left_width = 0.0;
@@ -223,12 +224,12 @@ bool IsParkedVehicle(const ReferenceLine& reference_line,
       std::min(obstacle_box.width(), obstacle_box.length()), &lanes);
   bool is_on_parking_lane = false;
   if (lanes.size() == 1 &&
-      lanes.front()->lane().type() == apollo::hdmap::Lane::PARKING) {
+      lanes.front()->lane().type() == apollo::hdmap::Lane::PARKING) { //停车车道
     is_on_parking_lane = true;
   }
-
-  bool is_parked = is_on_parking_lane || is_at_road_edge;
-  return is_parked && obstacle->IsStatic();
+  //如果障碍占用停车车道或者障碍车靠近road路边，那么认为障碍车已经park了
+  bool is_parked = is_on_parking_lane || is_at_road_edge; 
+  return is_parked && obstacle->IsStatic(); //同时必须是静态障碍物
 }
 
 }  // namespace planning

@@ -119,7 +119,7 @@ Status PathBoundsDecider::Process(
                                ->mutable_planning_status()
                                ->mutable_pull_over();
   const bool plan_pull_over_path = pull_over_status->plan_pull_over_path();
-  if (plan_pull_over_path) {
+  if (plan_pull_over_path) {  //default false
     PathBound pull_over_path_bound;
     Status ret = GeneratePullOverPathBound(*frame, *reference_line_info,
                                            &pull_over_path_bound);
@@ -473,8 +473,8 @@ Status PathBoundsDecider::GeneratePullOverPathBound(
   // PathBoundsDebugString(*path_bound);
 
   ConvertBoundarySAxisFromLaneCenterToRefLine(reference_line_info, path_bound);
-  if (adc_frenet_l_ < std::get<1>(path_bound->front()) ||
-      adc_frenet_l_ > std::get<2>(path_bound->front())) {
+  if (adc_frenet_l_ < std::get<1>(path_bound->front()) || 
+      adc_frenet_l_ > std::get<2>(path_bound->front())) {  //出界了
     const std::string msg =
         "ADC is outside road boundary already. Cannot generate pull-over path";
     AERROR << msg;
@@ -1329,7 +1329,7 @@ void PathBoundsDecider::UpdatePullOverBoundaryByLaneBoundary(
     }
     ADEBUG << "left_bound[" << left_bound << "] right_bound[" << right_bound
            << "]";
-    if (pull_over_type == PullOverStatus::PULL_OVER) {
+    if (pull_over_type == PullOverStatus::PULL_OVER) { //只更改左边界，向右靠边停车
       std::get<2>((*path_bound)[i]) = left_bound;
     } else if (pull_over_type == PullOverStatus::EMERGENCY_PULL_OVER) {
       // TODO(all): use left/right lane boundary accordingly
@@ -1838,11 +1838,11 @@ bool PathBoundsDecider::UpdatePathBoundaryWithBuffer(
 
   // Update the right bound (l_min):
   double new_l_min =
-      std::fmax(std::get<1>((*path_boundaries)[idx]),
+      std::fmax(std::get<1>((*path_boundaries)[idx]), //注意这个地方是+，对于右边界相当于是缩小
                 right_bound + right_adc_buffer_coeff *
                                   GetBufferBetweenADCCenterAndEdge()); 
   // Update the left bound (l_max):
-  double new_l_max = std::fmin(
+  double new_l_max = std::fmin(   //注意这个地方是-，对于左边界相当于是缩小
       std::get<2>((*path_boundaries)[idx]),
       left_bound - left_adc_buffer_coeff * GetBufferBetweenADCCenterAndEdge());
 

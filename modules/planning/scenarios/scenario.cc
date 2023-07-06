@@ -46,7 +46,7 @@ void Scenario::Init() {
                        ->mutable_planning_status()
                        ->mutable_scenario();
   scenario->Clear();
-  scenario->set_scenario_type(scenario_type());
+  scenario->set_scenario_type(scenario_type()); //scenario_type()：返回此场景的type
 
   for (const auto& stage_config : config_.stage_config()) {
     stage_config_map_[stage_config.stage_type()] = &stage_config;

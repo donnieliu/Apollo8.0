@@ -73,7 +73,8 @@ bool PathLaneBorrowDecider::IsNecessaryToBorrowLane(
   //如果当前处于借道场景中
   if (mutable_path_decider_status->is_in_path_lane_borrow_scenario()) {
     // If originally borrowing neighbor lane:
-    if (mutable_path_decider_status->able_to_use_self_lane_counter() >= 6) { //able_to_use_self_lane_counter：如果直行，则一直向上增加不超过10，如果非直行，则清零；直行超过6帧取消换道场景
+    //able_to_use_self_lane_counter：如果直行，则一直向上增加不超过10，如果非直行，则清零；直行超过6帧取消换道场景
+    if (mutable_path_decider_status->able_to_use_self_lane_counter() >= 6) { 
       // If have been able to use self-lane for some time, then switch to
       // non-lane-borrowing.
       mutable_path_decider_status->set_is_in_path_lane_borrow_scenario(false);
@@ -197,7 +198,7 @@ bool PathLaneBorrowDecider::IsBlockingObstacleWithinDestination(
   ADEBUG << "Destination is at s = "
          << reference_line_info.SDistanceToDestination() + adc_end_s;
   if (blocking_obstacle_s - adc_end_s >
-      reference_line_info.SDistanceToDestination()) {
+      reference_line_info.SDistanceToDestination()) {  //障碍物在终点后边，那么则不算blockingwithindestination
     return false;
   }
   return true;
@@ -233,7 +234,7 @@ bool PathLaneBorrowDecider::IsBlockingObstacleFarFromIntersection(
     // if (// overlap.first != ReferenceLineInfo::CLEAR_AREA &&
     // overlap.first != ReferenceLineInfo::CROSSWALK &&
     // overlap.first != ReferenceLineInfo::PNC_JUNCTION &&
-    if (overlap.first != ReferenceLineInfo::SIGNAL &&
+    if (overlap.first != ReferenceLineInfo::SIGNAL &&   //其他非SIGNAL and STOP_SIGN，则略过
         overlap.first != ReferenceLineInfo::STOP_SIGN) {
       continue;
     }
@@ -241,13 +242,13 @@ bool PathLaneBorrowDecider::IsBlockingObstacleFarFromIntersection(
     auto distance = overlap.second.start_s - blocking_obstacle_s;
     if (overlap.first == ReferenceLineInfo::SIGNAL ||
         overlap.first == ReferenceLineInfo::STOP_SIGN) {
-      if (distance < kIntersectionClearanceDist) {  //20
+      if (distance < kIntersectionClearanceDist) {  //20；距离交叉口过小了，那么也不允许借道
         ADEBUG << "Too close to signal intersection (" << distance
                << "m); don't SIDE_PASS.";
         return false;
       }
     } else {
-      if (distance < kJunctionClearanceDist) {  //15
+      if (distance < kJunctionClearanceDist) {  //15；如果是非SIGNAL或非STOP_SIGN，这个阈值变小了
         ADEBUG << "Too close to overlap_type[" << overlap.first << "] ("
                << distance << "m); don't SIDE_PASS";
         return false;
