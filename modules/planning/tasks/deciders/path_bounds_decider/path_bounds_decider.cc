@@ -635,7 +635,7 @@ bool PathBoundsDecider::FindDestinationPullOverS(
   ADEBUG << "Destination s[" << destination_s << "] adc_end_s[" << adc_end_s
          << "]";
   if (destination_s - adc_end_s < config_.path_bounds_decider_config()
-                                      .pull_over_destination_to_adc_buffer()) {
+                                      .pull_over_destination_to_adc_buffer()) {  //25米
     AERROR << "Destination is too close to ADC. distance["
            << destination_s - adc_end_s << "]";
     return false;
@@ -644,7 +644,8 @@ bool PathBoundsDecider::FindDestinationPullOverS(
   // Check if destination is within path-bounds searching scope.
   const double destination_to_pathend_buffer =
       config_.path_bounds_decider_config()
-          .pull_over_destination_to_pathend_buffer();
+          .pull_over_destination_to_pathend_buffer();  //4米
+          //path的终点到pullover的终点之间的距离要
   if (destination_s + destination_to_pathend_buffer >=
       std::get<0>(path_bound.back())) {
     AERROR << "Destination is not within path_bounds search scope";
@@ -661,10 +662,10 @@ bool PathBoundsDecider::FindEmergencyPullOverS(
   const double min_turn_radius = common::VehicleConfigHelper::Instance()
                                      ->GetConfig()
                                      .vehicle_param()
-                                     .min_turn_radius();
+                                     .min_turn_radius();  //5.05386147161
   const double adjust_factor =
       config_.path_bounds_decider_config()
-          .pull_over_approach_lon_distance_adjust_factor();
+          .pull_over_approach_lon_distance_adjust_factor();  //1.6
   const double pull_over_distance = min_turn_radius * 2 * adjust_factor;
   *pull_over_s = adc_end_s + pull_over_distance;
 
@@ -680,11 +681,12 @@ bool PathBoundsDecider::SearchPullOverPosition(
 
   // search direction
   bool search_backward = false;  // search FORWARD by default
-
+  //01.先根据不同场景搜索一个考察可停车区域的大致端点，然后从该端点出发确定可停车区域
   double pull_over_s = 0.0;
   if (pull_over_status.pull_over_type() ==
       PullOverStatus::EMERGENCY_PULL_OVER) {
-    if (!FindEmergencyPullOverS(reference_line_info, &pull_over_s)) {
+        //紧急情况，前方停车
+    if (!FindEmergencyPullOverS(reference_line_info, &pull_over_s)) {  //没有返回false的情况
       AERROR << "Failed to find emergency_pull_over s";
       return false;
     }
@@ -692,9 +694,10 @@ bool PathBoundsDecider::SearchPullOverPosition(
   } else if (pull_over_status.pull_over_type() == PullOverStatus::PULL_OVER) {
     if (!FindDestinationPullOverS(frame, reference_line_info, path_bound,
                                   &pull_over_s)) {
-      AERROR << "Failed to find pull_over s upon destination arrival";
+      AERROR << "Failed to find pull_over s upon destination arrival"; 
       return false;
     }
+    //理想的停车点是route的终点，因此要反向搜索，以找到匹配的bound
     search_backward = true;  // search BACKWARD from target position
   } else {
     return false;
