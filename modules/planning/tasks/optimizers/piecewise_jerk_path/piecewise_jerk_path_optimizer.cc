@@ -111,7 +111,7 @@ common::Status PiecewiseJerkPathOptimizer::Process(
 
     std::array<double, 3> end_state = {0.0, 0.0, 0.0};
 
-    if (!FLAGS_enable_force_pull_over_open_space_parking_test) {
+    if (!FLAGS_enable_force_pull_over_open_space_parking_test) {  //false
       // pull over scenario
       // set end lateral to be at the desired pull over destination
       const auto& pull_over_status =

@@ -533,8 +533,8 @@ Status PathBoundsDecider::GeneratePullOverPathBound(
         std::get<1>(pull_over_configuration));
     pull_over_status->mutable_position()->set_z(0.0);
     pull_over_status->set_theta(std::get<2>(pull_over_configuration));
-    pull_over_status->set_length_front(FLAGS_obstacle_lon_start_buffer);
-    pull_over_status->set_length_back(FLAGS_obstacle_lon_end_buffer);
+    pull_over_status->set_length_front(FLAGS_obstacle_lon_start_buffer); //3m
+    pull_over_status->set_length_back(FLAGS_obstacle_lon_end_buffer);  //2m
     pull_over_status->set_width_left(
         VehicleConfigHelper::GetConfig().vehicle_param().width() / 2.0);
     pull_over_status->set_width_right(
@@ -547,7 +547,7 @@ Status PathBoundsDecider::GeneratePullOverPathBound(
 
   // Trim path-bound properly
   while (static_cast<int>(path_bound->size()) - 1 >
-         curr_idx + kNumExtraTailBoundPoint) {
+         curr_idx + kNumExtraTailBoundPoint) {  //20
     path_bound->pop_back();
   }
   for (size_t idx = curr_idx + 1; idx < path_bound->size(); ++idx) {
@@ -593,7 +593,7 @@ int PathBoundsDecider::IsPointWithinPathBound(
   reference_line_info.reference_line().XYToSL({x, y}, &point_sl);
   if (point_sl.s() > std::get<0>(path_bound.back()) ||
       point_sl.s() <
-          std::get<0>(path_bound.front()) - kPathBoundsDeciderResolution * 2) {
+          std::get<0>(path_bound.front()) - kPathBoundsDeciderResolution * 2) {  //0.5
     ADEBUG << "Longitudinally outside the boundary.";
     return -1;
   }
@@ -645,7 +645,7 @@ bool PathBoundsDecider::FindDestinationPullOverS(
   const double destination_to_pathend_buffer =
       config_.path_bounds_decider_config()
           .pull_over_destination_to_pathend_buffer();  //4米
-          //path的终点到pullover的终点之间的距离要
+          //path的终点到pullover的终点之间的距离要大于4m
   if (destination_s + destination_to_pathend_buffer >=
       std::get<0>(path_bound.back())) {
     AERROR << "Destination is not within path_bounds search scope";
@@ -704,19 +704,19 @@ bool PathBoundsDecider::SearchPullOverPosition(
   }
 
   int idx = 0;
-  if (search_backward) {
+  if (search_backward) { //普通靠边停车
     // 1. Locate the first point before destination.
     idx = static_cast<int>(path_bound.size()) - 1;
     while (idx >= 0 && std::get<0>(path_bound[idx]) > pull_over_s) {
       --idx;
-    }
-  } else {
+    }  //反向搜索时，idx表示停车区域的末端
+  } else {  //紧急靠边停车
     // 1. Locate the first point after emergency_pull_over s.
     while (idx < static_cast<int>(path_bound.size()) &&
            std::get<0>(path_bound[idx]) < pull_over_s) {
       ++idx;
     }
-  }
+  } //前向搜索时，idx表示停车区域的开端
   if (idx < 0 || idx >= static_cast<int>(path_bound.size())) {
     AERROR << "Failed to find path_bound index for pull over s";
     return false;
@@ -724,11 +724,11 @@ bool PathBoundsDecider::SearchPullOverPosition(
 
   // Search for a feasible location for pull-over.
   const double pull_over_space_length =
-      kPulloverLonSearchCoeff *
+      kPulloverLonSearchCoeff *  //1.5
           VehicleConfigHelper::GetConfig().vehicle_param().length() -
-      FLAGS_obstacle_lon_start_buffer - FLAGS_obstacle_lon_end_buffer;
+      FLAGS_obstacle_lon_start_buffer - FLAGS_obstacle_lon_end_buffer;  //3；2
   const double pull_over_space_width =
-      (kPulloverLatSearchCoeff - 1.0) *
+      (kPulloverLatSearchCoeff - 1.0) *   //1.25
       VehicleConfigHelper::GetConfig().vehicle_param().width();
   const double adc_half_width =
       VehicleConfigHelper::GetConfig().vehicle_param().width() / 2.0;
@@ -760,12 +760,14 @@ bool PathBoundsDecider::SearchPullOverPosition(
            << pt_xy.y() << ")";
     std::vector<std::shared_ptr<const JunctionInfo>> junctions;
     HDMapUtil::BaseMap().GetJunctions(hdmap_point, 1.0, &junctions);
-    if (!junctions.empty()) {
+    //根据该点能够获取到交叉路口，则不行，根据靠边类型选择向后或向前搜索
+    if (!junctions.empty()) {  
       AWARN << "Point is in PNC-junction.";
       idx = search_backward ? idx - 1 : idx + 1;
       continue;
     }
 
+    //搜索一段宽度达标、长度达标的可停车区域。即，搜索合适的端点j
     while ((search_backward && j >= 0 &&
             std::get<0>(path_bound[idx]) - std::get<0>(path_bound[j]) <
                 pull_over_space_length) ||
@@ -782,7 +784,7 @@ bool PathBoundsDecider::SearchPullOverPosition(
              << curr_road_left_width << "] curr_road_right_width["
              << curr_road_right_width << "]";
       if (curr_road_right_width - (curr_right_bound + adc_half_width) >
-          config_.path_bounds_decider_config().pull_over_road_edge_buffer()) {
+          config_.path_bounds_decider_config().pull_over_road_edge_buffer()) { //0.15
         AERROR << "Not close enough to road-edge. Not feasible for pull-over.";
         is_feasible_window = false;
         break;
@@ -802,6 +804,7 @@ bool PathBoundsDecider::SearchPullOverPosition(
     if (j < 0) {
       return false;
     }
+    //03.找到可停车区域后，获取停车目标点的位姿
     if (is_feasible_window) {
       has_a_feasible_window = true;
       const auto& reference_line = reference_line_info.reference_line();
@@ -810,7 +813,7 @@ bool PathBoundsDecider::SearchPullOverPosition(
       const auto& vehicle_param =
           VehicleConfigHelper::GetConfig().vehicle_param();
       const double back_clear_to_total_length_ratio =
-          (0.5 * (kPulloverLonSearchCoeff - 1.0) * vehicle_param.length() +
+          (0.5 * (kPulloverLonSearchCoeff - 1.0) * vehicle_param.length() + //kPulloverLonSearchCoeff：1.5
            vehicle_param.back_edge_to_center()) /
           vehicle_param.length() / kPulloverLonSearchCoeff;
 
@@ -820,6 +823,8 @@ bool PathBoundsDecider::SearchPullOverPosition(
         start_idx = idx;
         end_idx = j;
       }
+
+      //根据start_idx和end_idx计算pull_over_idx。注意index是相对于bounds的
       auto pull_over_idx = static_cast<size_t>(
           back_clear_to_total_length_ratio * static_cast<double>(end_idx) +
           (1.0 - back_clear_to_total_length_ratio) *
@@ -943,7 +948,7 @@ bool PathBoundsDecider::InitPathBoundary(
        curr_s < std::fmin(adc_frenet_s_ +
                               std::fmax(kPathBoundsDeciderHorizon, //100
                                         reference_line_info.GetCruiseSpeed() *
-                                            FLAGS_trajectory_time_length),
+                                            FLAGS_trajectory_time_length),  //8s
                           reference_line.Length());
        curr_s += kPathBoundsDeciderResolution) { //0.5
     path_bound->emplace_back(curr_s, std::numeric_limits<double>::lowest(),
