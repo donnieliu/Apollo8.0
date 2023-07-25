@@ -437,7 +437,7 @@ void PathAssessmentDecider::SetPathInfo(
 void PathAssessmentDecider::TrimTailingOutLanePoints(
     PathData* const path_data) {
   // Don't trim self-lane path or fallback path.
-  if (path_data->path_label().find("fallback") != std::string::npos ||
+  if (path_data->path_label().find("fallback") != std::string::npos || //如果fallback或者self，则跳过
       path_data->path_label().find("self") != std::string::npos) {
     return;
   }
@@ -686,7 +686,7 @@ void PathAssessmentDecider::SetPathPointType(
     double lane_right_width = 0.0;
     double middle_s =
         (ego_sl_boundary.start_s() + ego_sl_boundary.end_s()) / 2.0;
-    if (reference_line_info.reference_line().GetLaneWidth(   //这里为什么根据s可以直接获取相邻车道的宽度（换道），可能是因为是获取参考线所在的车道宽度，如果获取参考线相邻车道宽度也是比较麻烦？？
+    if (reference_line_info.reference_line().GetLaneWidth(  
             middle_s, &lane_left_width, &lane_right_width)) {
       // Rough sl boundary estimate using single point lane width
       double back_to_inlane_extra_buffer = 0.2;
@@ -709,12 +709,12 @@ void PathAssessmentDecider::SetPathPointType(
           // This means that ADC has safely completed lane-change with margin.
           std::get<1>((*path_point_decision)[i]) =
               PathData::PathPointType::IN_LANE;
-        } else {
+        } else {   //跨两条车道的时候
           // ADC is right across two lanes.
           std::get<1>((*path_point_decision)[i]) =
               PathData::PathPointType::OUT_ON_FORWARD_LANE;
         }
-      } else {
+      } else {  //这个时候考虑借道的情况
         // For lane-borrow path, as long as ADC is not on the lane of
         // reference-line, it is out on other lanes. It might even be
         // on reverse lane!
