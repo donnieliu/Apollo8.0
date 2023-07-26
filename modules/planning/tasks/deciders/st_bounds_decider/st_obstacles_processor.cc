@@ -491,7 +491,7 @@ bool STObstaclesProcessor::ComputeObstacleSTBoundary(
     // Get the overlapping s between ADC path and obstacle's perception box.
     const Box2d& obs_box = obstacle.PerceptionBoundingBox();
     std::pair<double, double> overlapping_s;
-    if (GetOverlappingS(adc_path_points, obs_box, kADCSafetyLBuffer,
+    if (GetOverlappingS(adc_path_points, obs_box, kADCSafetyLBuffer,  //0.1m
                         &overlapping_s)) {
       lower_points->emplace_back(overlapping_s.first, 0.0);
       lower_points->emplace_back(overlapping_s.first, planning_time_);
